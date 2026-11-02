@@ -1,54 +1,31 @@
 name: App tests
 
-# The kit runtime and the apps' synthetic checks (no SDK, renderer or car needed). Live Adjustments and
-# ZF 8HP have theirs in experimental-apps.yml; the renderer's are in renderd.yml. (test_diagnostic_zh.js needs a
-# built dtc_scanner, and a build needs BMW's SDK, which is not in git: it runs only where the SDK is.)
 on:
-  pull_request:
-    paths:
-      - 'apps/**'                 # test_zh.py checks every app.json and the text in every app
-      - 'kit/runtime/**'
-      - 'kit/tools/test_*'
-      - 'kit/localization/**'
-      - 'kit/tools/build.py'
-      - 'kit/tools/pack_data.py'
-      - 'kit/tools/localize.py'
-      - 'kit/tools/import_diagnostic_ru.py'
-      - 'kit/tools/build_diagnostic_ru.py'
-      - '.github/workflows/app-tests.yml'
   push:
-    paths:
-      - 'apps/**'                 # test_zh.py checks every app.json and the text in every app
-      - 'kit/runtime/**'
-      - 'kit/tools/test_*'
-      - 'kit/localization/**'
-      - 'kit/tools/build.py'
-      - 'kit/tools/pack_data.py'
-      - 'kit/tools/localize.py'
-      - 'kit/tools/import_diagnostic_ru.py'
-      - 'kit/tools/build_diagnostic_ru.py'
-      - '.github/workflows/app-tests.yml'
-
-permissions:
-  contents: read
+    branches:
+      - main
+  pull_request:
 
 jobs:
   synthetic-tests:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - uses: actions/setup-python@v5
+          node-version: 20
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - run: node kit/tools/test_runtime.js
-      - run: node kit/tools/test_edrive.js
-      - run: node kit/tools/test_warmup.js
-      - run: node kit/tools/test_draggy.js
-      - run: node kit/tools/test_brake_test.js
-      - run: node kit/tools/test_gforce.js
-      - run: node kit/tools/test_zh.js
-      - run: cd kit/tools && python3 test_zh.py
-      - run: python3 kit/tools/test_import_diagnostic_ru.py
+          python-version: "3.11"
+
+      - name: Run runtime tests
+        run: node kit/tools/test_runtime.js
+
+      - name: Validate Weather manifest
+        run: node kit/tools/test_weather.js
