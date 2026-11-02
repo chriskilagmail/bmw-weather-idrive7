@@ -16,7 +16,7 @@
         "{id}"
       ],
       "sdk": "oap-sdk",
-      "output": "dist/{id}@{version}.tgz"
+      "output": "dist/{id}@{version}.mgu"
     }
   }
 }
