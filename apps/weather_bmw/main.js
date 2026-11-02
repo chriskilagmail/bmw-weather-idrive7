@@ -1,6 +1,8 @@
 'use strict';
 
 const https = require('https');
+const dns = require('dns');
+const urlLib = require('url');
 const mgu = require('./kit/mgu');
 const { Canvas } = require('./kit/canvas');
 
@@ -44,9 +46,55 @@ function getJson(url, timeoutMs) {
             else resolve(value);
         }
 
+        function directLookup(hostname, options, callback) {
+            if (typeof options === 'function') {
+                callback = options;
+            }
+
+            dns.resolve4(hostname, function(err, addresses) {
+                if (err) {
+                    const e = new Error('Direct DNS failed for ' + hostname + ': ' + err.message);
+                    done(e);
+                    return callback(e);
+                }
+
+                if (!addresses || !addresses.length) {
+                    const e = new Error('Direct DNS returned no address for ' + hostname);
+                    done(e);
+                    return callback(e);
+                }
+
+                callback(null, addresses[0], 4);
+            });
+        }
+
         try {
-            // Kept deliberately simple for the MGU Node.js 8 runtime.
-            req = https.get(url, function(res) {
+            // Bypass the BMW system resolver (127.0.0.1/dnsmasq).
+            // mgu-uplink already permits this app UID to use wlan0, so
+            // direct DNS queries from this process can leave via the hotspot.
+            try {
+                dns.setServers(['1.1.1.1', '8.8.8.8']);
+            } catch (e) {
+                // resolve4() below will return a useful error if this fails.
+            }
+
+            const parsed = urlLib.parse(url);
+            const options = {
+                protocol: 'https:',
+                hostname: parsed.hostname,
+                port: parsed.port || 443,
+                path: parsed.path,
+                method: 'GET',
+                servername: parsed.hostname,
+                headers: {
+                    'Host': parsed.hostname,
+                    'Accept': 'application/json',
+                    'Connection': 'close'
+                },
+                lookup: directLookup
+            };
+
+            req = https.request(options, function(res) {
                 let body = '';
 
                 res.on('data', function(chunk) {
@@ -73,6 +121,8 @@ function getJson(url, timeoutMs) {
             req.on('error', function(err) {
                 done(err);
             });
+
+            req.end();
 
             timer = setTimeout(function() {
                 if (finished) return;

@@ -2,7 +2,7 @@
   "id": "weather_bmw",
   "title": "Weather",
   "description": "Current weather and 5-day forecast with BMW-style home widget",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "mguInternet": true,
   "mguHmi": [
     "ID7"
