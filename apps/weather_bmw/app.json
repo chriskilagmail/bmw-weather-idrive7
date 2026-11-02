@@ -1,0 +1,135 @@
+{
+  "id": "weather_bmw",
+  "title": "Weather",
+  "description": "Current weather and 5-day forecast with BMW-style home widget",
+  "version": "1.1.0",
+  "mguInternet": true,
+  "mguHmi": [
+    "ID7"
+  ],
+  "vendor": "custom",
+  "loggingId": "OAWE",
+  "iconGlyph": "temp",
+  "screens": [
+    {
+      "name": "MAIN",
+      "kind": "canvas",
+      "title": "Weather",
+      "buttons": [
+        [
+          "BTN_REFRESH",
+          "Refresh"
+        ],
+        [
+          "BTN_SETTINGS",
+          "Settings"
+        ]
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "key": "location",
+      "label": "Location",
+      "type": "choice",
+      "default": "porto_alegre",
+      "markDefault": true,
+      "options": [
+        [
+          "porto_alegre",
+          "Porto Alegre"
+        ],
+        [
+          "gramado",
+          "Gramado"
+        ],
+        [
+          "caxias",
+          "Caxias do Sul"
+        ]
+      ]
+    },
+    {
+      "key": "tempUnit",
+      "label": "Temperature unit",
+      "type": "choice",
+      "default": "c",
+      "options": [
+        [
+          "c",
+          "Celsius"
+        ],
+        [
+          "f",
+          "Fahrenheit"
+        ]
+      ]
+    },
+    {
+      "key": "refreshMinutes",
+      "label": "Refresh interval",
+      "type": "number",
+      "unit": "min",
+      "default": 15,
+      "steps": [
+        5,
+        10,
+        15,
+        30,
+        60
+      ]
+    }
+  ],
+  "startWidget": {
+    "comment": "Big widget uses BackgroundImage1. Small widget uses the native text/progress cells because this layout does not display the image at small size.",
+    "name": "Weather",
+    "layout": "LT_Table_OnlineApps_DriveRecorderWidget",
+    "image": "BackgroundImage1",
+    "size": [
+      384,
+      256
+    ],
+    "safe": [
+      0.09,
+      0.1
+    ],
+    "cells": {
+      "ErrorInfo": [
+        false,
+        "Bool"
+      ],
+      "background": [
+        true,
+        "Bool"
+      ],
+      "Title": [
+        "",
+        "Text"
+      ],
+      "TextRecordings": [
+        "",
+        "Text"
+      ],
+      "TextCam": [
+        "",
+        "Text"
+      ],
+      "ProgressbarVisible": [
+        false,
+        "Bool"
+      ],
+      "Progress": [
+        0,
+        "Float"
+      ],
+      "TimeElapsed": [
+        "",
+        "Text"
+      ],
+      "TimeRemaining": [
+        "",
+        "Text"
+      ]
+    }
+  }
+}
