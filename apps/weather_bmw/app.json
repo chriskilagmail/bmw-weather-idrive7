@@ -1,8 +1,8 @@
 {
   "id": "weather_bmw",
-  "title": "Weather",
-  "description": "Current weather and 5-day forecast with BMW-style home widget",
-  "version": "1.1.1",
+  "title": "Clima",
+  "description": "Clima atual e previsão de 5 dias com widget BMW iDrive 7",
+  "version": "1.1.7",
   "mguInternet": true,
   "mguHmi": [
     "ID7"
@@ -14,15 +14,15 @@
     {
       "name": "MAIN",
       "kind": "canvas",
-      "title": "Weather",
+      "title": "Clima",
       "buttons": [
         [
           "BTN_REFRESH",
-          "Refresh"
+          "Atualizar"
         ],
         [
           "BTN_SETTINGS",
-          "Settings"
+          "Configurações"
         ]
       ]
     }
@@ -30,7 +30,7 @@
   "settings": [
     {
       "key": "location",
-      "label": "Location",
+      "label": "Localização",
       "type": "choice",
       "default": "porto_alegre",
       "markDefault": true,
@@ -51,7 +51,7 @@
     },
     {
       "key": "tempUnit",
-      "label": "Temperature unit",
+      "label": "Unidade de temperatura",
       "type": "choice",
       "default": "c",
       "options": [
@@ -67,7 +67,7 @@
     },
     {
       "key": "refreshMinutes",
-      "label": "Refresh interval",
+      "label": "Intervalo de atualização",
       "type": "number",
       "unit": "min",
       "default": 15,
@@ -81,8 +81,8 @@
     }
   ],
   "startWidget": {
-    "comment": "Big widget uses BackgroundImage1. Small widget uses the native text/progress cells because this layout does not display the image at small size.",
-    "name": "Weather",
+    "comment": "Compact widget: native ASCII text lines (time + weekday/day, month, temperature + condition). Big widget remains image-backed.",
+    "name": "Clima",
     "layout": "LT_Table_OnlineApps_DriveRecorderWidget",
     "image": "BackgroundImage1",
     "size": [
@@ -90,8 +90,8 @@
       256
     ],
     "safe": [
-      0.09,
-      0.1
+      0.02,
+      0.02
     ],
     "cells": {
       "ErrorInfo": [

@@ -12,24 +12,39 @@ const LOCATIONS = {
     caxias: { name: 'Caxias do Sul', lat: -29.1678, lon: -51.1794 }
 };
 
+// Descrições WMO em português, mantendo os tipos de ícones já existentes.
 const WEATHER = {
-    0: ['Clear', 'sun'],
-    1: ['Mostly clear', 'suncloud'],
-    2: ['Partly cloudy', 'suncloud'],
-    3: ['Cloudy', 'cloud'],
-    45: ['Fog', 'fog'], 48: ['Fog', 'fog'],
-    51: ['Light drizzle', 'rain'], 53: ['Drizzle', 'rain'], 55: ['Heavy drizzle', 'rain'],
-    56: ['Freezing drizzle', 'rain'], 57: ['Freezing drizzle', 'rain'],
-    61: ['Light rain', 'rain'], 63: ['Rain', 'rain'], 65: ['Heavy rain', 'rain'],
-    66: ['Freezing rain', 'rain'], 67: ['Freezing rain', 'rain'],
-    71: ['Light snow', 'snow'], 73: ['Snow', 'snow'], 75: ['Heavy snow', 'snow'], 77: ['Snow grains', 'snow'],
-    80: ['Rain showers', 'rain'], 81: ['Rain showers', 'rain'], 82: ['Heavy showers', 'rain'],
-    85: ['Snow showers', 'snow'], 86: ['Snow showers', 'snow'],
-    95: ['Thunderstorm', 'storm'], 96: ['Thunderstorm', 'storm'], 99: ['Thunderstorm', 'storm']
+    0: ['Céu limpo', 'sun'],
+    1: ['Predomínio de sol', 'suncloud'],
+    2: ['Parcialmente nublado', 'suncloud'],
+    3: ['Nublado', 'cloud'],
+    45: ['Neblina', 'fog'], 48: ['Neblina com geada', 'fog'],
+    51: ['Garoa fraca', 'rain'], 53: ['Garoa', 'rain'], 55: ['Garoa forte', 'rain'],
+    56: ['Garoa congelante', 'rain'], 57: ['Garoa congelante forte', 'rain'],
+    61: ['Chuva fraca', 'rain'], 63: ['Chuva', 'rain'], 65: ['Chuva forte', 'rain'],
+    66: ['Chuva congelante', 'rain'], 67: ['Chuva congelante forte', 'rain'],
+    71: ['Neve fraca', 'snow'], 73: ['Neve', 'snow'], 75: ['Neve forte', 'snow'],
+    77: ['Grãos de neve', 'snow'],
+    80: ['Pancadas fracas', 'rain'], 81: ['Pancadas de chuva', 'rain'],
+    82: ['Pancadas fortes', 'rain'],
+    85: ['Pancadas de neve', 'snow'], 86: ['Neve intensa', 'snow'],
+    95: ['Trovoadas', 'storm'], 96: ['Trovoadas e granizo', 'storm'],
+    99: ['Trovoadas e granizo forte', 'storm']
 };
 
 function weatherInfo(code) {
-    return WEATHER[Number(code)] || ['Weather', 'cloud'];
+    return WEATHER[Number(code)] || ['Clima indisponível', 'cloud'];
+}
+
+function weatherSymbol(kind) {
+    if (kind === 'sun') return '☀';
+    if (kind === 'suncloud') return '☀';
+    if (kind === 'cloud') return '☁';
+    if (kind === 'fog') return '≋';
+    if (kind === 'rain') return '☂';
+    if (kind === 'snow') return '❄';
+    if (kind === 'storm') return '⚡';
+    return '•';
 }
 
 function getJson(url, timeoutMs) {
@@ -140,7 +155,42 @@ function getJson(url, timeoutMs) {
 
 function dayName(iso) {
     const d = new Date(iso + 'T12:00:00Z');
-    return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getUTCDay()] || '';
+    return ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'][d.getUTCDay()] || '';
+}
+
+// O sistema Linux da MGU usa UTC, independentemente do fuso exibido no iDrive.
+// Porto Alegre/RS utiliza UTC-03:00 (sem horário de verão atualmente).
+// Fazemos o deslocamento sobre o timestamp e lemos os campos UTC para que a
+// virada do dia, mês e ano fique correta, inclusive entre 00:00 e 02:59 UTC.
+// O widget continua atualizando o relógio sem solicitar clima novamente.
+function dataHoraLocal() {
+    const now = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const weekdays = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado'];
+    const months = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const hh = String(now.getUTCHours()).padStart(2, '0');
+    const mm = String(now.getUTCMinutes()).padStart(2, '0');
+    return {
+        hora: hh + ':' + mm,
+        dia: weekdays[now.getUTCDay()] + ', ' + now.getUTCDate(),
+        mes: months[now.getUTCMonth()]
+    };
+}
+
+// Texto curto para caber ao lado da temperatura no widget compacto.
+function condicaoCompacta(code) {
+    const n = Number(code);
+    if (n === 0 || n === 1) return 'Ensolarado';
+    if (n === 2) return 'Parcial. nublado';
+    if (n === 3) return 'Nublado';
+    if (n === 45 || n === 48) return 'Neblina';
+    if (n >= 51 && n <= 57) return 'Garoa';
+    if (n >= 61 && n <= 67) return 'Chuva';
+    if (n >= 71 && n <= 77) return 'Neve';
+    if (n >= 80 && n <= 82) return 'Pancadas';
+    if (n === 85 || n === 86) return 'Neve';
+    if (n >= 95) return 'Trovoadas';
+    return 'Clima';
 }
 
 function temp(v) {
@@ -389,7 +439,7 @@ mgu.run({
             cv.text(state.place.toUpperCase(), 85, 103, 28, dim, {
                 font: 'bold', literal: true
             });
-            cv.text('NOW', 85, 145, 20, accent, {
+            cv.text('AGORA', 85, 145, 20, accent, {
                 font: 'bold', literal: true
             });
 
@@ -402,10 +452,10 @@ mgu.run({
                 font: 'bold', literal: true
             });
 
-            cv.text('FEELS ' + temp(state.current.apparent) + state.unit,
+            cv.text('SENSAÇÃO '  + temp(state.current.apparent) + state.unit,
                 360, 366, 22, dim, { font: 'label', literal: true });
 
-            cv.text('WIND ' +
+            cv.text('VENTO ' +
                 (state.current.wind === null || state.current.wind === undefined
                     ? '--' : Math.round(state.current.wind)) +
                 ' km/h',
@@ -445,19 +495,19 @@ mgu.run({
                     align: 'center', font: 'num', literal: true
                 });
 
-                cv.text(rainPct(d.rain) + '% rain', x + cardW / 2, y + 258, 18, dim, {
+                cv.text(rainPct(d.rain) + '% chuva', x + cardW / 2, y + 258, 18, dim, {
                     align: 'center', literal: true
                 });
             }
 
             if (state.loading && !state.fetchedAt) {
                 cv.roundRect(608, 205, 380, 82, 18, '#172330');
-                cv.text('Updating weather...', 798, 258, 26, text, {
+                cv.text('Atualizando clima...', 798, 258, 26, text, {
                     align: 'center', font: 'bold', literal: true
                 });
             } else if (state.error) {
                 cv.roundRect(625, 433, 640, 42, 16, '#3A2020');
-                cv.text('Offline - showing last data', 945, 461, 20, '#FFB0A8', {
+                cv.text('Sem conexão - últimos dados', 945, 461, 20, '#FFB0A8', {
                     align: 'center', font: 'bold', literal: true
                 });
             } else {
@@ -465,7 +515,7 @@ mgu.run({
                     ? Math.max(0, Math.round((Date.now() - state.fetchedAt) / 60000))
                     : 0;
 
-                cv.text('UPDATED ' + ago + ' MIN AGO', 1450, 460, 16, dim, {
+                cv.text('ATUALIZADO HÁ ' + ago + ' MIN', 1450, 460, 16, dim, {
                     align: 'right', font: 'label', literal: true
                 });
             }
@@ -475,12 +525,10 @@ mgu.run({
 
         /* ---------------- Home-screen widget ----------------
          *
-         * BMW's LT_Table_OnlineApps_DriveRecorderWidget behaves differently
-         * by size:
-         *   - big: the BackgroundImage1 picture is shown
-         *   - small: the picture is not shown; native cells carry the content
-         *
-         * This mirrors the working eDrive implementation from idrive7-apps.
+         * v1.1.3
+         * - Big widget: wider/shorter internal composition to counter ID7 vertical stretch.
+         * - Small widget: keeps native text cells and uses the widget image only for a single
+         *   current-condition icon, because Unicode symbols are not reliably rendered.
          */
 
         if (ctx.widget) {
@@ -491,34 +539,26 @@ mgu.run({
                 if (!inst) return;
 
                 const small = !inst.big;
+                const clock = dataHoraLocal();
                 const info = weatherInfo(state.current.code);
-                const tomorrow = state.days[1] || null;
-                const rain = tomorrow ? rainPct(tomorrow.rain) : 0;
-                const wind = state.current.wind === null || state.current.wind === undefined
-                    ? '--'
-                    : Math.round(state.current.wind);
-
+                // ID7 compact widget: three visible text rows in fixed positions.
+                // The template does not expose a large right-hand clock.
+                // Use ASCII only here because accented glyphs do not display.
+                // Row 1: 12:37  Sabado, 7
+                // Row 2: Novembro
+                // Row 3: 21C  Nublado
+                const compactTemp = temp(state.current.temp) +
+                    (state.unit === '°F' ? 'F' : 'C');
+                const weather = compactTemp + '  ' +
+                    condicaoCompacta(state.current.code);
                 const cells = {
-                    Title: [small ? 'Weather' : '', 'Text'],
-                    TextRecordings: [
-                        small ? (temp(state.current.temp) + state.unit + '   ' + info[0]) : '',
-                        'Text'
-                    ],
-                    TextCam: [small ? state.place : '', 'Text'],
-                    ProgressbarVisible: [small && !!tomorrow, 'Bool'],
-                    Progress: [small && tomorrow ? rain : 0, 'Float'],
-                    TimeElapsed: [
-                        small && tomorrow
-                            ? ('Tomorrow ' + temp(tomorrow.max) + '° / ' + temp(tomorrow.min) + '°')
-                            : (small && state.loading ? 'Updating...' : ''),
-                        'Text'
-                    ],
-                    TimeRemaining: [
-                        small
-                            ? (state.error ? 'Offline' : ('Wind ' + wind + ' km/h'))
-                            : '',
-                        'Text'
-                    ]
+                    Title: [small ? clock.hora + '  ' + clock.dia : '', 'Text'],
+                    TextRecordings: [small ? clock.mes : '', 'Text'],
+                    TextCam: [small ? weather : '', 'Text'],
+                    ProgressbarVisible: [false, 'Bool'],
+                    Progress: [0, 'Float'],
+                    TimeElapsed: ['', 'Text'],
+                    TimeRemaining: ['', 'Text']
                 };
 
                 const prev = wtext[inst.spawnId] || (wtext[inst.spawnId] = {});
@@ -538,107 +578,108 @@ mgu.run({
 
                 const sw = ctx.spec.startWidget || {};
                 const size = sw.size || [384, 256];
-                const safe = sw.safe || [0.09, 0.1];
                 const w = size[0];
                 const h = size[1];
                 const key = w + 'x' + h;
 
-                // The small widget ignores this image, but the callback still returns one.
                 const cv = (wcan[key] = wcan[key] || new Canvas(w, h))
-                    .clear([0, 0, 0, 0]);
-
-                if (!inst || !inst.big) return cv;
-
-                const sx = safe[0];
-                const sy = safe[1];
-                const x0 = Math.round(w * sx);
-                const x1 = w - x0;
-                const y0 = Math.round(h * sy);
-                const y1 = h - y0;
-                const iw = x1 - x0;
-
-                // Compact big-widget design: deliberately smaller than the PC preview,
-                // because the HMI scales the image up and crops a fixed share at the edges.
-                cv.gradientRect(0, 0, w, h, [
-                    [0, '#0B1118'],
-                    [1, '#162333']
-                ]);
+                    .clear('#05080D');
 
                 const info = weatherInfo(state.current.code);
-                const text = '#F5F7FA';
-                const dim = '#9BA8B5';
-                const accent = '#70BFFF';
+                const text = '#FFFFFF';
+                const dim = '#C7CFD7';
+                const accent = '#5EB8FF';
+                const line = '#314151';
 
-                cv.text(state.place, x0, y0 + 18, 15, dim, {
+                if (!inst || !inst.big) {
+                    // Compact ID7 uses native text rows; keep bitmap as fallback.
+                    const clock = dataHoraLocal();
+                    const compactTemp = temp(state.current.temp) +
+                        (state.unit === '°F' ? 'F' : 'C');
+                    cv.fillRect(0, 0, w, h, '#05080D');
+                    cv.text(clock.hora + '  ' + clock.dia, 12, 43, 24, text, {
+                        font: 'bold', literal: true
+                    });
+                    cv.text(clock.mes, 12, 79, 19, text, {
+                        literal: true
+                    });
+                    cv.text(compactTemp + '  ' + condicaoCompacta(state.current.code),
+                        12, 119, 17, text, { literal: true });
+                    return cv;
+                }
+
+                // Big widget: deliberately compose inside a shorter virtual band.
+                // ID7 stretches this widget vertically; we counteract it by using only
+                // about 70% of the physical height and leaving dead space below.
+                cv.fillRect(0, 0, w, h, '#05080D');
+
+                const top = 12;
+                const contentBottom = 182;
+
+                // Header
+                cv.text(state.place.toUpperCase(), 16, top + 14, 13, text, {
+                    font: 'bold', literal: true
+                });
+                cv.text('CLIMA', w - 16, top + 14, 10, accent, {
+                    align: 'right', font: 'bold', literal: true
+                });
+
+                // Current conditions
+                drawIcon(cv, info[1], 48, 72, 0.30, text, dim);
+
+                cv.text(temp(state.current.temp) + state.unit, 96, 74, 31, text, {
+                    font: 'num', literal: true
+                });
+
+                cv.text(info[0], 98, 98, 13, text, {
                     font: 'bold', literal: true
                 });
 
-                drawBmwLogo(cv, x1 - 10, y0 + 12, 0.26);
-
-                drawIcon(cv, info[1], x0 + 33, y0 + 72, 0.33, text, dim);
-
-                cv.text(temp(state.current.temp) + state.unit,
-                    x0 + 74, y0 + 78, 36, text,
-                    { font: 'num', literal: true });
-
-                cv.text(info[0], x0 + 76, y0 + 100, 13, text, {
-                    font: 'bold', literal: true
+                cv.text('Sensação '  + temp(state.current.apparent) + state.unit, 98, 116, 10, dim, {
+                    literal: true
                 });
-
-                cv.text('Feels ' + temp(state.current.apparent) + state.unit,
-                    x0 + 76, y0 + 120, 11, dim, { literal: true });
 
                 const wind = state.current.wind === null || state.current.wind === undefined
                     ? '--'
                     : Math.round(state.current.wind);
 
-                cv.text('Wind ' + wind + ' km/h',
-                    x0 + 76, y0 + 137, 11, dim, { literal: true });
+                cv.text('Vento ' + wind + ' km/h', 214, 116, 10, dim, {
+                    literal: true
+                });
 
-                cv.line(x0, y0 + 151, x1, y0 + 151, 1, '#2C3B4B');
+                cv.line(14, 132, w - 14, 132, 1, line);
 
+                // 3-day forecast in a compact row.
                 const days = state.days.slice(1, 4);
-                const colW = iw / 3;
+                const left = 10;
+                const right = w - 10;
+                const colW = (right - left) / 3;
 
                 for (let i = 0; i < 3; i++) {
                     const d = days[i];
                     if (!d) continue;
 
-                    const cx = x0 + colW * i + colW / 2;
+                    const x0 = left + i * colW;
+                    const cx = x0 + colW / 2;
                     const wi = weatherInfo(d.code);
 
-                    cv.text(dayName(d.date), cx, y0 + 170, 11,
+                    cv.text(dayName(d.date), cx, 148, 10,
                         i === 0 ? accent : dim,
                         { align: 'center', font: 'bold', literal: true });
 
-                    drawIcon(cv, wi[1], cx - 25, y0 + 194, 0.18, text, dim);
+                    drawIcon(cv, wi[1], cx - 25, 164, 0.13, text, dim);
 
-                    cv.text(temp(d.max) + '°', cx, y0 + 199, 15, text, {
-                        font: 'num', literal: true
+                    cv.text(temp(d.max) + '°', cx, 168, 15, text, {
+                        align: 'center', font: 'num', literal: true
                     });
 
-                    cv.text(temp(d.min) + '°', cx + 27, y0 + 199, 11, dim, {
+                    cv.text(temp(d.min) + '°', cx + 28, 168, 10, dim, {
                         font: 'num', literal: true
-                    });
-
-                    cv.text(rainPct(d.rain) + '%', cx, Math.min(y1 - 4, y0 + 218), 10, dim, {
-                        align: 'center', literal: true
                     });
 
                     if (i < 2) {
-                        cv.line(x0 + colW * (i + 1), y0 + 163,
-                            x0 + colW * (i + 1), y1 - 3, 1, '#263645');
+                        cv.line(x0 + colW, 140, x0 + colW, contentBottom, 1, line);
                     }
-                }
-
-                if (state.loading && !state.fetchedAt) {
-                    cv.text('Updating...', (x0 + x1) / 2, y1 - 8, 12, accent, {
-                        align: 'center', font: 'bold', literal: true
-                    });
-                } else if (state.error) {
-                    cv.text('Offline', x1, y1 - 8, 11, '#FFB0A8', {
-                        align: 'right', font: 'bold', literal: true
-                    });
                 }
 
                 return cv;
