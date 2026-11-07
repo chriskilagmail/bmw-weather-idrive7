@@ -1,8 +1,8 @@
 {
   "id": "weather_bmw",
   "title": "Clima",
-  "description": "Clima atual e previsão de 5 dias com widget BMW iDrive 7",
-  "version": "1.1.7",
+  "description": "Clima e previsao de 3 dias com widget grafico experimental para BMW iDrive 7",
+  "version": "1.2.0",
   "mguInternet": true,
   "mguHmi": [
     "ID7"
@@ -78,10 +78,26 @@
         30,
         60
       ]
+    },
+    {
+      "key": "widgetMode",
+      "label": "Widget reduzido",
+      "type": "choice",
+      "default": "imagem",
+      "options": [
+        [
+          "imagem",
+          "Imagem (experimental)"
+        ],
+        [
+          "texto",
+          "Texto (compativel)"
+        ]
+      ]
     }
   ],
   "startWidget": {
-    "comment": "Compact widget: native ASCII text lines (time + weekday/day, month, temperature + condition). Big widget remains image-backed.",
+    "comment": "Experimental: graphical compact canvas sent to BackgroundImage1. ID7 DriveRecorder small template may hide this cell; set widgetMode=texto to restore the verified text-only fallback.",
     "name": "Clima",
     "layout": "LT_Table_OnlineApps_DriveRecorderWidget",
     "image": "BackgroundImage1",
